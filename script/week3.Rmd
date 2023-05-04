@@ -14,6 +14,7 @@ library(ggplot2) # to visualize data
 library(sf) # to handle spatial vector data
 library(terra) # To handle raster data
 library(lubridate) # To handle dates and times
+library(SimilarityMeasures)
 library(RColorBrewer)
 
 mycolors4 <- brewer.pal(4, "BrBG")
@@ -233,3 +234,7 @@ Note:
 -   `LCSS`takes very long to compute. The accuracy of the algorithm (`pointSpacing =` ,`pointDistance =` and `errorMarg =`) can be varied to provide faster calculations. Please see Vlachos, Gunopoulos, and Kollios ([2002](https://computationalmovementanalysis.github.io/FS23/90_references.html#ref-vlachos2002)) for more information.
 
 Commit your changes with a meaningful commit message. Now push all your changes to Github.
+
+```{r}
+install.packages("SimilarityMeasures") # Library added in first code block
+```
