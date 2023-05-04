@@ -191,3 +191,45 @@ rle_id <- function(vec) {
 You can use the newly created function `rle_id` to assign unique IDs to subtrajectories (as shown below). Visualize the *moving* segments by colourizing them by `segment_ID`. Then use `segment_ID` as a grouping variable to determine the segments duration and remove short segments (e.g. segments with a duration \< 5 Minutes)
 
 Commit your changes with a meaningful commit message.
+
+```{r}
+caro <- caro |>
+    mutate(segment_id = rle_id(static))
+
+caro
+```
+
+### **Task 5: Similarity measures**
+
+We will now leave the wild boar data and turn our attentian to human movement. You will use the dataset [pedestrian.csv](https://moodle.zhaw.ch/pluginfile.php/1168373/mod_folder/content/0/pedestrian.csv?forcedownload=1) for this (and the following) task. Download an import this dataset as a `data.frame` or `tibble`. It it a set of six different but similar trajectories from pedestrians walking on a path.
+
+For this task, explore the trajectories first and get an idea on how the pedestrians moved. We step away from using the wild boar data for this task because our animals don\'t express the type of similarity we want to illustrate here. Also, using the constructed pedestrian data allows us illustrating very typical similarity issues, that are picked-up in different ways by the different similarity measures. In later exercises we will get back to our wild boar!
+
+Commit your changes with a meaningful commit message.
+
+```{r}
+pedestrian <- read_csv("data/pedestrian.csv")
+```
+
+```{r}
+ggplot(pedestrian, aes(E, N, color = TrajID)) +
+  geom_path() +
+  geom_point() +
+  coord_equal() +
+  facet_grid(cols=vars(pedestrian$TrajID)) +
+  theme_linedraw()
+```
+
+**Task 6: Calculate similarity**
+
+Install the package `SimilarityMeasures` (`install.packages("SimilarityMeasures")`). Familiarize yourself with this package by skimming through the function descriptions `help(package = "SimilarityMeasures")`. Now compare trajectory 1 to trajectories 2-6 using different similarity measures from the package. Your options are. `DTW`, `EditDist`, `Frechet` and `LCSS`.
+
+Visualize your results and try to understand the different results with respect to your reading of Alan Both ([2018](https://computationalmovementanalysis.github.io/FS23/90_references.html#ref-both2018)). Can you see connections between the properties of the trajectories and the similarity values computed by the different measures?
+
+Note:
+
+-   All functions in the package need matrices as input, with one trajectory per matrix.
+
+-   `LCSS`takes very long to compute. The accuracy of the algorithm (`pointSpacing =` ,`pointDistance =` and `errorMarg =`) can be varied to provide faster calculations. Please see Vlachos, Gunopoulos, and Kollios ([2002](https://computationalmovementanalysis.github.io/FS23/90_references.html#ref-vlachos2002)) for more information.
+
+Commit your changes with a meaningful commit message. Now push all your changes to Github.
