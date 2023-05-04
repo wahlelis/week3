@@ -168,3 +168,11 @@ caro_filter <- caro |>
 Now visualize the segmented trajectory spatially. Just like last week, you can use ggplot with `geom_path()`, `geom_point()` and `coord_equal()`. Assign `colour = static` within `aes()` to distinguish between segments *with* \"movement\" and *without*.
 
 Commit your changes with a meaningful commit message.
+
+```{r}
+ggplot(caro, aes(E, N, color = static)) +
+  geom_path() +
+  geom_point() +
+  coord_equal() +
+  theme_linedraw()
+```
