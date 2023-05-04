@@ -153,3 +153,18 @@ summary(caro$stepMean)
 ggplot(caro, aes(stepMean)) +
   geom_boxplot()
 ```
+
+```{r}
+caro <- caro |>
+    ungroup() |>
+    mutate(static = stepMean < mean(stepMean, na.rm = TRUE))
+
+caro_filter <- caro |>
+    filter(!static)
+```
+
+### **Task 3: Visualize segmented trajectories**
+
+Now visualize the segmented trajectory spatially. Just like last week, you can use ggplot with `geom_path()`, `geom_point()` and `coord_equal()`. Assign `colour = static` within `aes()` to distinguish between segments *with* \"movement\" and *without*.
+
+Commit your changes with a meaningful commit message.
