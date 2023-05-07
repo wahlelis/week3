@@ -113,7 +113,7 @@ posmo <- read_delim("private/posmo.csv")
 posmo <- select(posmo, datetime, lon_x, lat_y)
 ```
 
-As before, we will calculate the euclidean distance \"by hand\". This means we need the coordinates of our locations stored in a **Projected CRS**. Our data is stored in a geodetic coordinate reference system (WGS84, i.e. EPSG 4326). We can transform the data to EPSG 2056 with the function `st_transform`, as we explained in [the first week](https://computationalmovementanalysis.github.io/FS23/Week1/W1_5_tasks_and_inputs.html#sec-week1-task3-reproject).
+As before, we will calculate the euclidean distance "by hand". This means we need the coordinates of our locations stored in a **Projected CRS**. Our data is stored in a geodetic coordinate reference system (WGS84, i.e. EPSG 4326). We can transform the data to EPSG 2056 with the function `st_transform`, as we explained in [the first week](https://computationalmovementanalysis.github.io/FS23/Week1/W1_5_tasks_and_inputs.html#sec-week1-task3-reproject).
 
 ```{r}
 posmo <- st_as_sf(posmo, coords = c("lon_x","lat_y"), crs = 4326) |>
@@ -143,37 +143,33 @@ Once you have completed the task, commit your changes with a meaningful commit m
 
 If you haven't already done so open the RStudio Project [you have prepared](https://computationalmovementanalysis.github.io/FS23/Week3/W3_3_preparation.html) for this week.
 
-With the skills from the input above you can now implement the segmentation algorithm described in Laube and Purves ([2011](https://computationalmovementanalysis.github.io/FS23/90_references.html#ref-laube2011)) on the dataset [caro60.csv](https://moodle.zhaw.ch/pluginfile.php/1168373/mod_folder/content/0/caro60.csv?forcedownload=1). Download this dataset (right click \> save target as...) and import it as a simple `data.frame` or `tibble` (you don't need an `sf`-object for today's task).
+With the skills from the input above you can now implement the segmentation algorithm described in Laube and Purves ([2011](https://computationalmovementanalysis.github.io/FS23/90_references.html#ref-laube2011)) on your own data.
 
 The sampling interval for this dataset is 1 minute. Use a temporal window v of 6 minutes, i.e. a window size of 6 positions (`n±3`).
 
 Once you have completed the task, commit your changes with a meaningful commit message and test your connection to Github by pushing your changes to your remote repository.
 
 ```{r}
-caro <- read_csv("data/caro60.csv")
-```
-
-```{r}
-caro <- caro |>
+posmo_filter <- posmo_filter |>
     mutate(
-      nMinus3 = sqrt((lag(E, 3) - E)^2 + (lag(N, 3) - N)^2), # distance to pos -3 minutes
-        nMinus2 = sqrt((lag(E, 2) - E)^2 + (lag(N, 2) - N)^2), # distance to pos -2 minutes
-        nMinus1 = sqrt((lag(E, 1) - E)^2 + (lag(N, 1) - N)^2), # distance to pos -1 minutes
-        nPlus1  = sqrt((E - lead(E, 1))^2 + (N - lead(N, 1))^2), # distance to pos +1 mintues
-        nPlus2  = sqrt((E - lead(E, 2))^2 + (N - lead(N, 2))^2), # distance to pos +2 minutes
-      nPlus3 = sqrt((E - lead(E, 3))^2 + (N - lead(N, 3))^2), # distance to pos +2 minutes
+      nMinus3 = sqrt((lag(X, 3) - X)^2 + (lag(Y, 3) - Y)^2), # distance to pos -3 minutes
+        nMinus2 = sqrt((lag(X, 2) - X)^2 + (lag(Y, 2) - Y)^2), # distance to pos -2 minutes
+        nMinus1 = sqrt((lag(X, 1) - X)^2 + (lag(Y, 1) - Y)^2), # distance to pos -1 minutes
+        nPlus1  = sqrt((X - lead(X, 1))^2 + (Y - lead(Y, 1))^2), # distance to pos +1 mintues
+        nPlus2  = sqrt((X - lead(X, 2))^2 + (Y - lead(Y, 2))^2), # distance to pos +2 minutes
+      nPlus3 = sqrt((X - lead(X, 3))^2 + (Y - lead(Y, 3))^2), # distance to pos +2 minutes
     )
 ```
 
 ```{r}
-caro <- caro |>
+posmo_filter <- posmo_filter |>
     rowwise() |>
     mutate(
         stepMean = mean(c(nMinus3, nMinus2, nMinus1, nPlus1, nPlus2, nPlus3))
     ) |>
     ungroup()
 
-caro
+posmo_filter
 ```
 
 ### **Task 2: Specify and apply threshold *d***
@@ -185,22 +181,22 @@ Store the new information (boolean to differentiate between stops (`TRUE`) and m
 Commit your changes with a meaningful commit message.
 
 ```{r}
-ggplot(caro, aes(stepMean)) +
+ggplot(posmo_filter, aes(stepMean)) +
   geom_histogram() +
-  geom_vline(xintercept = mean(caro$stepMean, na.rm=TRUE))
+  geom_vline(xintercept = mean(posmo_filter$stepMean, na.rm=TRUE))
 
-summary(caro$stepMean)
+summary(posmo_filter$stepMean)
 
-ggplot(caro, aes(stepMean)) +
+ggplot(posmo_filter, aes(stepMean)) +
   geom_boxplot()
 ```
 
 ```{r}
-caro <- caro |>
+posmo_filter <- posmo_filter |>
     ungroup() |>
     mutate(static = stepMean < mean(stepMean, na.rm = TRUE))
 
-caro_filter <- caro |>
+posmo_filter2 <- posmo_filter |>
     filter(!static)
 ```
 
