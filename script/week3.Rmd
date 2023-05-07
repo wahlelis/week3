@@ -207,12 +207,15 @@ Now visualize the segmented trajectory spatially. Just like last week, you can u
 Commit your changes with a meaningful commit message.
 
 ```{r}
-ggplot(caro, aes(E, N, color = static)) +
+ggplot(posmo_filter, aes(X, Y, color = static)) +
   geom_path() +
   geom_point() +
   coord_equal() +
   theme_linedraw()
+
 ```
+
+**Now that the trajectories are visualized, it becomes clear, that the definition of static and moving does not work in this case. The whole part where I have been riding the bike or sitting on a chairlift has been defined as "static" and only driving the car has been defined as "moving".**
 
 ### **Task 4: Segment-based analysis**
 
@@ -230,10 +233,16 @@ You can use the newly created function `rle_id` to assign unique IDs to subtraje
 Commit your changes with a meaningful commit message.
 
 ```{r}
-caro <- caro |>
+posmo_filter <- posmo_filter |>
     mutate(segment_id = rle_id(static))
 
-caro
+posmo_filter
+
+ggplot(posmo_filter, aes(X, Y, color = segment_id)) +
+  geom_path() +
+  geom_point() +
+  coord_equal() +
+  theme_linedraw()
 ```
 
 ### **Task 5: Similarity measures**
