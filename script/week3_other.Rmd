@@ -1,0 +1,188 @@
+---
+title: "Caro_stuff"
+author: "Lisa Wahlen"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 
+### **Task 1: Segmentation**
+
+If you haven't already done so open the RStudio Project [you have prepared](https://computationalmovementanalysis.github.io/FS23/Week3/W3_3_preparation.html) for this week.
+
+With the skills from the input above you can now implement the segmentation algorithm described in Laube and Purves ([2011](https://computationalmovementanalysis.github.io/FS23/90_references.html#ref-laube2011)) on your own data.
+
+The sampling interval for this dataset is 1 minute. Use a temporal window v of 6 minutes, i.e. a window size of 6 positions (`n±3`).
+
+Once you have completed the task, commit your changes with a meaningful commit message and test your connection to Github by pushing your changes to your remote repository.
+
+```{r}
+caro <- read_csv("data/caro60.csv")
+```
+
+```{r}
+caro <- caro |>
+    mutate(
+      nMinus3 = sqrt((lag(E, 3) - E)^2 + (lag(N, 3) - N)^2), # distance to pos -3 minutes
+        nMinus2 = sqrt((lag(E, 2) - E)^2 + (lag(N, 2) - N)^2), # distance to pos -2 minutes
+        nMinus1 = sqrt((lag(E, 1) - E)^2 + (lag(N, 1) - N)^2), # distance to pos -1 minutes
+        nPlus1  = sqrt((E - lead(E, 1))^2 + (N - lead(N, 1))^2), # distance to pos +1 mintues
+        nPlus2  = sqrt((E - lead(E, 2))^2 + (N - lead(N, 2))^2), # distance to pos +2 minutes
+      nPlus3 = sqrt((E - lead(E, 3))^2 + (N - lead(N, 3))^2), # distance to pos +2 minutes
+    )
+```
+
+```{r}
+caro <- caro |>
+    rowwise() |>
+    mutate(
+        stepMean = mean(c(nMinus3, nMinus2, nMinus1, nPlus1, nPlus2, nPlus3))
+    ) |>
+    ungroup()
+
+caro
+```
+
+### **Task 2: Specify and apply threshold *d***
+
+After calculating the Euclidean distances to positions within the temporal window *v* in task 1, you can explore these values (we stored them in the column `stepMean`) using summary statistics (histograms, boxplot, `summary()`): This way we can define a reasonable threshold value to differentiate between *stops* and *moves*. There is no "correct" way of doing this, specifying a threshold always depends on data as well as the question that needs to be answered. In this exercise, use the mean of all `stepMean` values.
+
+Store the new information (boolean to differentiate between stops (`TRUE`) and moves (`FALSE`)) in a new column named `static`.
+
+Commit your changes with a meaningful commit message.
+
+```{r}
+ggplot(caro, aes(stepMean)) +
+  geom_histogram() +
+  geom_vline(xintercept = mean(caro$stepMean, na.rm=TRUE))
+
+summary(caro$stepMean)
+
+ggplot(caro, aes(stepMean)) +
+  geom_boxplot()
+```
+
+```{r}
+caro <- caro |>
+    ungroup() |>
+    mutate(static = stepMean < mean(stepMean, na.rm = TRUE))
+
+caro_filter <- caro |>
+    filter(!static)
+```
+
+### **Task 3: Visualize segmented trajectories**
+
+Now visualize the segmented trajectory spatially. Just like last week, you can use ggplot with `geom_path()`, `geom_point()` and `coord_equal()`. Assign `colour = static` within `aes()` to distinguish between segments *with* "movement" and *without*.
+
+Commit your changes with a meaningful commit message.
+
+```{r}
+ggplot(caro, aes(E, N, color = static)) +
+  geom_path() +
+  geom_point() +
+  coord_equal() +
+  theme_linedraw()
+```
+
+### **Task 4: Segment-based analysis**
+
+In applying Laube and Purves ([2011](https://computationalmovementanalysis.github.io/FS23/90_references.html#ref-laube2011)), we've come as far as steps b in the figure above. In order to complete the last steps (c and d), we need a *unique* ID for each segment that we can use as a grouping variable. The following function does just that (it assigns unique IDs based on the column `static` which you created in Task 2). You will learn about functions next week. For now, just copy the following code chunk into your script and run it.
+
+```{r}
+rle_id <- function(vec) {
+    x <- rle(vec)$lengths
+    as.factor(rep(seq_along(x), times = x))
+}
+```
+
+You can use the newly created function `rle_id` to assign unique IDs to subtrajectories (as shown below). Visualize the *moving* segments by colourizing them by `segment_ID`. Then use `segment_ID` as a grouping variable to determine the segments duration and remove short segments (e.g. segments with a duration \< 5 Minutes)
+
+Commit your changes with a meaningful commit message.
+
+```{r}
+caro <- caro |>
+    mutate(segment_id = rle_id(static))
+
+caro
+```
+
+### **Task 5: Similarity measures**
+
+We will now leave the wild boar data and turn our attentian to human movement. You will use the dataset [pedestrian.csv](https://moodle.zhaw.ch/pluginfile.php/1168373/mod_folder/content/0/pedestrian.csv?forcedownload=1) for this (and the following) task. Download an import this dataset as a `data.frame` or `tibble`. It it a set of six different but similar trajectories from pedestrians walking on a path.
+
+For this task, explore the trajectories first and get an idea on how the pedestrians moved. We step away from using the wild boar data for this task because our animals don't express the type of similarity we want to illustrate here. Also, using the constructed pedestrian data allows us illustrating very typical similarity issues, that are picked-up in different ways by the different similarity measures. In later exercises we will get back to our wild boar!
+
+Commit your changes with a meaningful commit message.
+
+```{r}
+pedestrian <- read_csv("data/pedestrian.csv")
+```
+
+```{r}
+ggplot(pedestrian, aes(E, N, color = TrajID)) +
+  geom_path() +
+  geom_point() +
+  coord_equal() +
+  facet_grid(cols=vars(pedestrian$TrajID)) +
+  theme_linedraw()
+```
+
+**Task 6: Calculate similarity**
+
+Install the package `SimilarityMeasures` (`install.packages("SimilarityMeasures")`). Familiarize yourself with this package by skimming through the function descriptions `help(package = "SimilarityMeasures")`. Now compare trajectory 1 to trajectories 2-6 using different similarity measures from the package. Your options are. `DTW`, `EditDist`, `Frechet` and `LCSS`.
+
+Visualize your results and try to understand the different results with respect to your reading of Alan Both ([2018](https://computationalmovementanalysis.github.io/FS23/90_references.html#ref-both2018)). Can you see connections between the properties of the trajectories and the similarity values computed by the different measures?
+
+Note:
+
+-   All functions in the package need matrices as input, with one trajectory per matrix.
+
+```{r}
+pedestrian1 <- pedestrian |> 
+  filter(TrajID == 1) |> 
+  select(E, N)
+
+pedestrian2 <- pedestrian |> 
+  filter(TrajID == 2) |> 
+  select(E, N)
+
+pedestrian3 <- pedestrian |> 
+  filter(TrajID == 3)
+
+pedestrian4 <- pedestrian |> 
+  filter(TrajID == 4)
+
+pedestrian5 <- pedestrian |> 
+  filter(TrajID == 5)
+
+pedestrian6 <- pedestrian |> 
+  filter(TrajID == 6)
+```
+
+-   `LCSS`takes very long to compute. The accuracy of the algorithm (`pointSpacing =` ,`pointDistance =` and `errorMarg =`) can be varied to provide faster calculations. Please see Vlachos, Gunopoulos, and Kollios ([2002](https://computationalmovementanalysis.github.io/FS23/90_references.html#ref-vlachos2002)) for more information.
+
+```{r}
+#install.packages("SimilarityMeasures")
+
+#Frechet
+
+pedestrian1 <- data.matrix(pedestrian1)
+pedestrian2 <- data.matrix(pedestrian2)
+
+str(pedestrian1)
+is.matrix(pedestrian1)
+
+frechet <- Frechet(pedestrian1, pedestrian2, testLeash = 1)
+editDist <- EditDist(pedestrian1, pedestrian2, pointDistance=20)
+```
+
+Commit your changes with a meaningful commit message. Now push all your changes to Github.
+
+```{r}
+
+```
